@@ -1,3 +1,4 @@
+robot_type: ground
 device: cuda # cuda | cpu
 
 # -------------------------------------------------

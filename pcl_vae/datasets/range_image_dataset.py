@@ -1,7 +1,7 @@
 import os
 import numpy as np
+import torch
 from torch.utils.data import Dataset
-from torchvision import transforms
 import glob
 
 class RangeImageDataset(Dataset):
@@ -9,7 +9,6 @@ class RangeImageDataset(Dataset):
     def __init__(self, root_dir):
         self.root_dir = root_dir
         self.file_paths = self._get_all_paths(root_dir)
-        self.transform = transforms.Compose([transforms.ToTensor()])
 
     def _get_all_paths(self, root_dir):
         # Recursively get all file paths from the root directory
@@ -21,7 +20,9 @@ class RangeImageDataset(Dataset):
     def __getitem__(self, idx):
         range_path = self.file_paths[idx]
         range_np = np.load(range_path)
-        
-        range = self.transform(range_np)
-        
-        return range
+
+        # Match the previous torchvision ToTensor() output for HxW numpy arrays:
+        # produce a float tensor with shape (1, H, W).
+        range_tensor = torch.from_numpy(range_np).float().unsqueeze(0)
+
+        return range_tensor
