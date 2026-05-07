@@ -1,4 +1,10 @@
 __pycache__/
 **/__pycache__/
 pcl_vae.egg-info/
+weights/
+logs/
+env/
+.*
+pcl_vae/datasets/datasets/
+
 
