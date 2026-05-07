@@ -27,6 +27,23 @@ cd ~/pcl_vae
 pip3 install -e .
 ```
 
+#### ROS Noetic (catkin)
+This repository can also be used as a ROS 1 package named `pcl_vae` inside a catkin workspace.
+
+Build it from your workspace root:
+```bash
+cd ~/all_ws
+catkin build pcl_vae
+source devel/setup.bash
+```
+
+Run the encoder/decoder launch file:
+```bash
+roslaunch pcl_vae vae_latent_communication.launch robot_type:=ground
+```
+
+`publish_occupancy_map:=true` requires the Python package `warp-lang`. Basic latent-vector encode/decode without occupancy-map publishing does not require `warp-lang`.
+
 ## Folder Description
 The folders contain the following:
 

@@ -5,10 +5,14 @@ import argparse
 
 # Dataset Libraries
 from pcl_vae.datasets.range_image_dataset import RangeImageDataset
+from pcl_vae.path_utils import (
+    get_dataset_package_path,
+    get_package_data_path,
+    get_training_config_path,
+)
 from torch.utils.data import DataLoader
 
 # VAE Libraries
-import pcl_vae.train
 from pcl_vae.networks.VAE.vae import *
 from pcl_vae.networks.Loss.loss_functions import *
 from pcl_vae.networks.Loss.running_loss import RunningLoss
@@ -16,8 +20,8 @@ from torchsummary import summary
 from torch.utils.tensorboard import SummaryWriter
 
 # Path
-BASE_TRAIN_PATH = pcl_vae.train.__path__[0]
-BASE_DATASET_PATH = pcl_vae.datasets.__path__[0]
+BASE_TRAIN_PATH = get_package_data_path("train")
+BASE_DATASET_PATH = get_dataset_package_path()
 
 # Get the robot name
 parser = argparse.ArgumentParser() 
@@ -62,6 +66,7 @@ class PCLVAETrain():
         # TensorBoard
         self.experiment_name = self.robot_type + "_model"
         self.experiment_path = os.path.join(BASE_TRAIN_PATH, "weights", self.robot_type, self.experiment_name)
+        os.makedirs(self.experiment_path, exist_ok=True)
         TENSOR_BOARD_PATH = os.path.join(self.experiment_path, "tensorboard", f"{self.experiment_name}_LD_{self.latent_space}_epoch_{self.num_epochs}_batch_{self.batch_size}_range_{int(self.image_max_range)}_voxel_{int(self.voxel_size*100)}")
         writer = SummaryWriter(log_dir=TENSOR_BOARD_PATH)
 
@@ -76,7 +81,7 @@ class PCLVAETrain():
             print("[ROBOT]: Robot name: ", self.robot_type)
 
         # Load config file
-        CONFIG_PATH = os.path.join(BASE_TRAIN_PATH, "config", self.robot_type, "train_config.yaml")
+        CONFIG_PATH = get_training_config_path(self.robot_type)
         with open(CONFIG_PATH, "r") as file:
             data = yaml.safe_load(file)
             print(data)

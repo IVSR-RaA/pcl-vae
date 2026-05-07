@@ -10,17 +10,15 @@ import cv2
 from cv_bridge import CvBridge
 
 # Dataset Libraries
-import pcl_vae
 from pcl_vae.datasets.range_image_dataset import RangeImageDataset
+from pcl_vae.path_utils import get_dataset_package_path, get_validation_config_path
 from torch.utils.data import DataLoader
 
 # VAE Libraries
 from pcl_vae.inference.scripts.VAENetworkInterfaceValidation import VAENetworkInterfaceValidation
 from pcl_vae.networks.Loss.loss_functions import *
 
-# Paths
-BASE_PATH = pcl_vae.inference.__path__[0]
-BASE_DATASET_PATH = pcl_vae.datasets.__path__[0]
+BASE_DATASET_PATH = get_dataset_package_path()
 
 # Use argparser to distinguish between robot type
 parser = argparse.ArgumentParser()
@@ -65,7 +63,7 @@ class PCLVAEValidation():
             print("[ROBOT]: Robot name: ", self.robot_type)
 
         # Load config file
-        CONFIG_PATH = os.path.join(BASE_PATH, "config", self.robot_type, "vae_validation_config.yaml")
+        CONFIG_PATH = get_validation_config_path(self.robot_type)
         with open(CONFIG_PATH, "r") as file:
             data = yaml.safe_load(file)
 
@@ -233,4 +231,3 @@ class PCLVAEValidation():
 
 if __name__ == "__main__":
     PCLVAEValidation()
-

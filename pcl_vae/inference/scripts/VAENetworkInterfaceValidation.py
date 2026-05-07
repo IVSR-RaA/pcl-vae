@@ -1,11 +1,8 @@
 import time
 import os
 import torch
-import pcl_vae
 from pcl_vae.networks.VAE.vae import *
-
-# Weights Path
-BASE_PATH = pcl_vae.__path__[0]
+from pcl_vae.path_utils import get_weights_path
 
 class VAENetworkInterfaceValidation():
     def __init__(self, robot_type, model_name, latent_space_dim, device):
@@ -18,24 +15,26 @@ class VAENetworkInterfaceValidation():
         try:
             if robot_type == "aerial":
                 self.vae = VAE(input_channels=1, latent_dim=self.latent_space, inference_mode=True)
-                WEIGHTS_PATH_AERIAL = os.path.join(BASE_PATH, "weights", self.model_name)
-                dict = torch.load(WEIGHTS_PATH_AERIAL, map_location=torch.device(self.device))
+                weights_path = get_weights_path(self.model_name)
+                dict = torch.load(weights_path, map_location=torch.device(self.device))
                 print("[MODEL]: VAE model loaded to device: ", self.device)
-                print("[WEIGHTS]: Loading: " + WEIGHTS_PATH_AERIAL)
+                print("[WEIGHTS]: Loading: " + weights_path)
             elif robot_type == "ground":
                 self.vae = VAE_2(input_channels=1, latent_dim=self.latent_space, inference_mode=True)
-                WEIGHTS_PATH_GROUND = os.path.join(BASE_PATH, "weights", self.model_name)
-                dict = torch.load(WEIGHTS_PATH_GROUND, map_location=torch.device(self.device))
+                weights_path = get_weights_path(self.model_name)
+                dict = torch.load(weights_path, map_location=torch.device(self.device))
                 print("[MODEL]: VAE model loaded to device: ", self.device)
-                print("[WEIGHTS]: Loading: " + WEIGHTS_PATH_GROUND)
+                print("[WEIGHTS]: Loading: " + weights_path)
             else:
                 print("[ERROR]: Unknown robot name. I cannot choose vae model")
                 return
             self.vae.load_state_dict(dict, strict=True)
             self.vae = self.vae.to(self.device)
-        except:
+        except Exception as exc:
             print("Could not load networks")
-            raise Exception("Could not load networks")
+            raise RuntimeError(
+                f"Could not load networks from {get_weights_path(self.model_name)}"
+            ) from exc
 
     def forward(self, image_numpy):
         self.start_time = time.time()

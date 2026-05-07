@@ -21,14 +21,26 @@ import numpy as np
 import torch
 
 from pcl_vae.inference.scripts.VAENetworkInterfaceValidation import VAENetworkInterfaceValidation
-from pcl_vae.networks.Loss.loss_functions import (
-    convert_range_image_to_pointcloud,
-    convert_point_cloud_to_occupancy_map,
-    convert_occupancy_map_to_range_image,
-    range_image_reprojection,
-)
 
 INVALID_PIXEL_VALUE = -1.0
+
+
+def _load_occupancy_helpers():
+    """Import occupancy-map helpers only when that feature is used."""
+    try:
+        from pcl_vae.networks.Loss.loss_functions import (
+            convert_point_cloud_to_occupancy_map,
+            convert_range_image_to_pointcloud,
+        )
+    except ModuleNotFoundError as exc:
+        if exc.name == "warp":
+            raise RuntimeError(
+                "Occupancy-map conversion requires the 'warp-lang' Python package. "
+                "Install it to use occupancy-map features."
+            ) from exc
+        raise
+
+    return convert_range_image_to_pointcloud, convert_point_cloud_to_occupancy_map
 
 
 class VAERosInterface:
@@ -181,12 +193,19 @@ class VAERosInterface:
         -------
         occupancy_map : 3-D int32 torch tensor  (VOXEL_FREE / OCCUPIED / UNKNOWN).
         """
+        convert_range_image_to_pointcloud, convert_point_cloud_to_occupancy_map = (
+            _load_occupancy_helpers()
+        )
         point_cloud = convert_range_image_to_pointcloud(
             range_image_tensor, self.h_fov, self.v_fov
         )
         return convert_point_cloud_to_occupancy_map(
             point_cloud, self.voxel_size, self.max_depth
         )
+
+    def ensure_occupancy_support(self) -> None:
+        """Raise a clear error if occupancy-map conversion dependencies are missing."""
+        _load_occupancy_helpers()
 
     def reconstructed_norm_to_occupancy_map(
         self,
@@ -208,6 +227,9 @@ class VAERosInterface:
         -------
         occupancy_map : 3-D int32 torch tensor.
         """
+        convert_range_image_to_pointcloud, convert_point_cloud_to_occupancy_map = (
+            _load_occupancy_helpers()
+        )
         # Wrap in the expected (1, 1, H, W) batch tensor
         recon_tensor = (
             torch.from_numpy(recon_norm)

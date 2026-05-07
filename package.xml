@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pcl_vae</name>
+  <version>0.0.3</version>
+  <description>Task-driven point cloud compression VAE package with ROS Noetic nodes.</description>
+
+  <maintainer email="angelos.zacharia@ntnu.no">Angelos Zacharia</maintainer>
+  <author email="angelos.zacharia@ntnu.no">Angelos Zacharia</author>
+  <author email="mihir.dharmadhikari@ntnu.no">Mihir Dharmadhikari</author>
+  <author email="konstantinos.alexis@ntnu.no">Kostas Alexis</author>
+  <license>BSD-3-Clause</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+
+  <build_export_depend>cv_bridge</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-rospkg</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>
