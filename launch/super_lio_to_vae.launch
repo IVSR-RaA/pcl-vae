@@ -1,0 +1,31 @@
+<launch>
+  <arg name="robot_type" default="ground" />
+  <arg name="point_cloud_topic" default="/points_raw" />
+  <arg
+    name="config_path"
+    default="$(find pcl_vae)/pcl_vae/inference/config/$(arg robot_type)/vae_validation_config.yaml" />
+  <arg name="publish_occ_map" default="false" />
+  <arg name="publish_norm_image" default="false" />
+  <arg name="queue_size" default="1" />
+
+  <node
+    name="point_to_range_image"
+    pkg="pcl_vae"
+    type="point_to_range_image_node.py"
+    output="screen"
+    respawn="false">
+    <param name="config_path" value="$(arg config_path)" />
+    <param name="robot_type" value="$(arg robot_type)" />
+    <param name="queue_size" value="$(arg queue_size)" />
+    <remap from="~input/points" to="$(arg point_cloud_topic)" />
+    <remap from="~output/range_image" to="/vae_encoder/input/range_image" />
+  </node>
+
+  <include file="$(find pcl_vae)/launch/vae_latent_communication.launch">
+    <arg name="robot_type" value="$(arg robot_type)" />
+    <arg name="config_path" value="$(arg config_path)" />
+    <arg name="publish_occ_map" value="$(arg publish_occ_map)" />
+    <arg name="publish_norm_image" value="$(arg publish_norm_image)" />
+    <arg name="queue_size" value="$(arg queue_size)" />
+  </include>
+</launch>

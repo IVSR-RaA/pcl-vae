@@ -78,6 +78,8 @@ Adding a new weight file does not require rebuilding the workspace.
 #### ROS Topics
 The ROS nodes use the following topics:
 
+- `/point_to_range_image/input/points` : `sensor_msgs/PointCloud2`
+- `/point_to_range_image/output/range_image` : `sensor_msgs/Image` with `32FC1` encoding
 - `/vae_encoder/input/range_image` : `sensor_msgs/Image` with `32FC1` encoding
 - `/vae_encoder/output/latent_vector` : `std_msgs/Float32MultiArray`
 - `/vae_decoder/output/range_image` : `sensor_msgs/Image` with `32FC1` encoding
@@ -87,7 +89,7 @@ The ROS nodes use the following topics:
 The launch file remaps the decoder latent input to the encoder latent output automatically.
 
 #### ROS Launch
-Run the encoder/decoder pipeline:
+Run the encoder/decoder pipeline when you already have a range image source:
 
 ```bash
 source /home/nlg/pcl-vae/env/bin/activate
@@ -114,6 +116,82 @@ roslaunch pcl_vae vae_latent_communication.launch \
 
 `publish_occ_map:=true` requires the Python package `warp-lang`. The occupancy map is large, so leave it disabled unless you need it.
 
+#### PointCloud2 To Range Image Bridge
+If your upstream stack publishes raw LiDAR scans as `sensor_msgs/PointCloud2`, use the bridge node to project them into the range-image format expected by the VAE encoder.
+
+Bridge only:
+
+```bash
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+roslaunch pcl_vae point_to_rangeimage.launch \
+  robot_type:=ground \
+  point_cloud_topic:=/points_raw
+```
+
+Full `PointCloud2 -> range image -> latent -> decoded range image` pipeline:
+
+```bash
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+roslaunch pcl_vae super_lio_to_vae.launch \
+  robot_type:=ground \
+  point_cloud_topic:=/points_raw
+```
+
+Useful arguments for the bridge launches:
+
+- `robot_type:=aerial|ground`
+- `point_cloud_topic:=/your/raw/pointcloud/topic`
+- `config_path:=/absolute/path/to/vae_validation_config.yaml`
+- `publish_occ_map:=true|false` for `super_lio_to_vae.launch`
+- `publish_norm_image:=true|false` for `super_lio_to_vae.launch`
+
+#### Super-LIO Integration
+`pcl_vae` should consume the raw LiDAR scan topic used by `Super-LIO`, not the fused SLAM map outputs.
+
+Use:
+
+- raw sensor topic such as `/points_raw`, `/mid/points`, or another sensor-frame `PointCloud2`
+
+Do not use:
+
+- `/lio/cloud_world`
+- `/lio/robo/cloud_world`
+- any world-frame accumulated map or dense fused cloud
+
+The VAE was trained on single-scan range images in the sensor frame. Feeding a fused world cloud changes the geometry and will not match the training distribution.
+
+Examples:
+
+- `Super-LIO` `M2DGR.yaml` uses `/mid/points` with `lidar_type: 4` (`VELO32`). You can bridge that topic with:
+
+```bash
+roslaunch pcl_vae super_lio_to_vae.launch \
+  robot_type:=ground \
+  point_cloud_topic:=/mid/points
+```
+
+- `Super-LIO` `MCD_ATH.yaml` uses `/livox/lidar` with `lidar_type: 1` (`LIVOX`). The current bridge node does not subscribe to `livox_ros_driver/CustomMsg`; it currently supports `sensor_msgs/PointCloud2` only.
+
+#### Sensor Compatibility Notes
+The provided pretrained `pcl_vae` models are for:
+
+- aerial: `Ouster OS0-64`
+- ground: `Velodyne VLP-16`
+
+So there are two separate questions:
+
+1. Can the ROS bridge run with your upstream sensor topic?
+   Yes, if the input is `sensor_msgs/PointCloud2`.
+2. Will a pretrained model give good compression quality on that sensor?
+   Not necessarily.
+
+Examples:
+
+- `VELO32` data can be bridged and encoded, but model quality may be suboptimal because the pretrained ground model was trained for `VLP-16`, not `VELO32`.
+- `Livox` data needs an additional adapter node, and in practice usually also needs retraining or fine-tuning because the scan pattern differs strongly from spinning lidars.
+
 #### Direct Python Validation
 If you want to validate a model without ROS:
 
@@ -129,7 +207,9 @@ The folders contain the following:
 
 - **datasets**: Contain scripts that utilize pytorch's dataset class to read from dataset files
 - **inference**: Contains the scripts for running the pcl_vae node
+- **launch**: ROS launch files for the VAE pipeline and point-cloud bridge
 - **networks**: Contains the VAE networks, and the loss function for training the VAEs
+- **scripts**: ROS nodes for encoding, decoding, and point-cloud to range-image conversion
 - **weights**:  Contains the weights for the VAEs
 
 

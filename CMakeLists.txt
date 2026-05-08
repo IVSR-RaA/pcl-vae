@@ -17,6 +17,7 @@ catkin_package(
 catkin_install_python(PROGRAMS
   scripts/vae_encoder_node.py
   scripts/vae_decoder_node.py
+  scripts/point_to_range_image_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
