@@ -16,33 +16,113 @@ The proposed solution supports data gathered from two different LiDAR sensors:
 ## Setup
 #### Clone the repository
 ```bash
-cd ~
+cd ~/all_ws/src
 git clone git@github.com:ntnu-arl/pcl-vae.git
 ```
 
 #### Install
 To install the repository, run the following commands:
 ```bash
-cd ~/pcl_vae
-pip3 install -e .
+source /home/nlg/pcl-vae/env/bin/activate
+cd ~/all_ws/src/pcl-vae
+pip install -e .
 ```
 
 #### ROS Noetic (catkin)
-This repository can also be used as a ROS 1 package named `pcl_vae` inside a catkin workspace.
+This repository can be used as a ROS 1 package named `pcl_vae` inside a catkin workspace.
 
-Build it from your workspace root:
+Tested workspace layout:
+
+- repo: `~/all_ws/src/pcl-vae`
+- Python environment: `/home/nlg/pcl-vae/env`
+
+Activate the environment and build from your workspace root:
+
 ```bash
+source /home/nlg/pcl-vae/env/bin/activate
 cd ~/all_ws
-catkin build pcl_vae
-source devel/setup.bash
+catkin build pcl_vae --force-cmake --cmake-args -DPYTHON_EXECUTABLE=/home/nlg/pcl-vae/env/bin/python3
+source ~/all_ws/devel/setup.bash
 ```
 
-Run the encoder/decoder launch file:
+`catkin` generates Python relay scripts for one interpreter. If you change the virtualenv later, rebuild with the same `-DPYTHON_EXECUTABLE=...` pattern so `roslaunch` uses the correct Python.
+
+#### ROS Weights And Config
+Place `.pth` files under:
+
+- `~/all_ws/src/pcl-vae/pcl_vae/weights`
+
+Then update the matching validation config:
+
+- `pcl_vae/inference/config/aerial/vae_validation_config.yaml`
+- `pcl_vae/inference/config/ground/vae_validation_config.yaml`
+
+The following fields must match the selected weight:
+
+- `robot_type`
+- `model_name`
+- `latent_space`
+- `voxel_size`
+
+Example:
+
+```yaml
+model_name: aerial_model_LD_32_epoch_20_batch_16_range_20_voxel_40.pth
+robot_type: aerial
+latent_space: 32
+voxel_size: 0.4
+```
+
+Adding a new weight file does not require rebuilding the workspace.
+
+#### ROS Topics
+The ROS nodes use the following topics:
+
+- `/vae_encoder/input/range_image` : `sensor_msgs/Image` with `32FC1` encoding
+- `/vae_encoder/output/latent_vector` : `std_msgs/Float32MultiArray`
+- `/vae_decoder/output/range_image` : `sensor_msgs/Image` with `32FC1` encoding
+- `/vae_decoder/output/range_image_norm` : optional normalized reconstruction
+- `/vae_decoder/output/occupancy_map` : optional `std_msgs/Int32MultiArray`
+
+The launch file remaps the decoder latent input to the encoder latent output automatically.
+
+#### ROS Launch
+Run the encoder/decoder pipeline:
+
 ```bash
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
 roslaunch pcl_vae vae_latent_communication.launch robot_type:=ground
 ```
 
-`publish_occupancy_map:=true` requires the Python package `warp-lang`. Basic latent-vector encode/decode without occupancy-map publishing does not require `warp-lang`.
+Useful launch arguments:
+
+- `robot_type:=aerial|ground`
+- `publish_occ_map:=true|false`
+- `publish_norm_image:=true|false`
+- `queue_size:=1`
+- `config_path:=/absolute/path/to/vae_validation_config.yaml`
+
+Example with all decoder outputs enabled:
+
+```bash
+roslaunch pcl_vae vae_latent_communication.launch \
+  robot_type:=aerial \
+  publish_occ_map:=true \
+  publish_norm_image:=true
+```
+
+`publish_occ_map:=true` requires the Python package `warp-lang`. The occupancy map is large, so leave it disabled unless you need it.
+
+#### Direct Python Validation
+If you want to validate a model without ROS:
+
+```bash
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+cd ~/all_ws/src/pcl-vae/pcl_vae/inference/src
+python vae_node_validation.py --robot_type=aerial
+```
 
 ## Folder Description
 The folders contain the following:
@@ -59,7 +139,7 @@ For each robot, we provide a dataset containing both real and simulated range im
 
 #### Download the datasets
 ```bash
-cd ~/pcl-vae/pcl_vae/datasets/
+cd ~/all_ws/src/pcl-vae/pcl_vae/datasets/
 wget -O datasets.zip "https://ndownloader.figshare.com/files/53055530?private_link=ce4e4b87b3a28a75be27"
 unzip datasets.zip 
 ```
@@ -81,14 +161,14 @@ For each robot, we provide pre-trained models with varying latent space size `{3
 #### Download pre-trained models
 For aerial robot models
 ```bash
-cd ~/pcl-vae/pcl_vae/weights/
+cd ~/all_ws/src/pcl-vae/pcl_vae/weights/
 wget -O aerial_robot_pcl_vae_models.zip "https://ndownloader.figshare.com/files/53083268?private_link=ce4e4b87b3a28a75be27"
 unzip aerial_robot_pcl_vae_models.zip 
 ```
 
 For ground robot models
 ```bash
-cd ~/pcl-vae/pcl_vae/weights/
+cd ~/all_ws/src/pcl-vae/pcl_vae/weights/
 wget -O ground_robot_pcl_vae_models.zip "https://ndownloader.figshare.com/files/53083163?private_link=ce4e4b87b3a28a75be27"
 unzip ground_robot_pcl_vae_models.zip 
 ```
@@ -101,8 +181,10 @@ To validate a pre-trained model, you need to modify the parameters in the config
 #### Run
 Run the following command specifying the robot type. Replace `<robot-type>` with `aerial` or `ground` for validate the the pre-trained model for aerial or ground robot, respectively.
 ```bash
-cd pcl_vae/pcl_vae/inference/src
-python3 vae_node_validation.py --robot_type=<robot-type>
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+cd ~/all_ws/src/pcl-vae/pcl_vae/inference/src
+python vae_node_validation.py --robot_type=<robot-type>
 ```
 An example of the output is shown in the figure below, which includes the raw range image input to the model, its voxel-aware representation, and the reconstructed range image. range_image_comparison
 ![range_image_comparison](img/range_images_comparison.png)
@@ -120,8 +202,10 @@ To train a `pcl_vae` model, you need to modify the parameters in the configurati
 #### Run
 To start training the model, run the following command, specifying the robot type. Replace `<robot-type>` with aerial or ground for training a pcl_vae for aerial or ground robot, respectively.
 ```bash
-cd ~/pcl_vae/pcl_vae/train
-python3 train_pcl_vae.py --robot_type=<robot-type>
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+cd ~/all_ws/src/pcl-vae/pcl_vae/train
+python train_pcl_vae.py --robot_type=<robot-type>
 ```
 **Note:** The model is saved under the `train/weights/<robot-type>/<robot-type>_model` folder.
 
@@ -137,8 +221,10 @@ To validate the trained model, you need to modify the parameters in the configur
 #### Run
 Run the following command specifying the robot type. Replace `<robot-type>` with `aerial` or `ground` for validate the the pre-trained model for aerial or ground robot, respectively.
 ```bash
-cd pcl_vae/pcl_vae/inference/src
-python3 vae_node_validation.py --robot_type=<robot-type>
+source /home/nlg/pcl-vae/env/bin/activate
+source ~/all_ws/devel/setup.bash
+cd ~/all_ws/src/pcl-vae/pcl_vae/inference/src
+python vae_node_validation.py --robot_type=<robot-type>
 ```
 
 
