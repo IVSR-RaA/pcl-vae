@@ -1,0 +1,31 @@
+<launch>
+  <arg name="robot_type" default="ground" />
+  <arg
+    name="config_path"
+    default="$(find pcl_vae)/pcl_vae/inference/config/$(arg robot_type)/vae_validation_config.yaml" />
+  <arg name="range_image_topic" default="/vae_decoder/output/range_image" />
+  <arg name="octvox_cloud_topic" default="/range_image_to_octvox/output/octvox_cloud" />
+  <arg name="backprojected_cloud_topic" default="/range_image_to_octvox/output/backprojected_cloud" />
+  <arg name="clear_before_insert" default="true" />
+  <arg name="target_frame" default="" />
+  <arg name="octvox_capacity" default="1000000" />
+  <arg name="publish_backprojected_cloud" default="true" />
+  <arg name="queue_size" default="1" />
+
+  <node
+    name="range_image_to_octvox"
+    pkg="pcl_vae"
+    type="range_image_to_octvox_node"
+    output="screen"
+    respawn="false">
+    <rosparam command="load" file="$(arg config_path)" />
+    <param name="queue_size" value="$(arg queue_size)" />
+    <param name="clear_before_insert" value="$(arg clear_before_insert)" />
+    <param name="target_frame" value="$(arg target_frame)" />
+    <param name="octvox_capacity" value="$(arg octvox_capacity)" />
+    <param name="publish_backprojected_cloud" value="$(arg publish_backprojected_cloud)" />
+    <remap from="~input/range_image" to="$(arg range_image_topic)" />
+    <remap from="~output/octvox_cloud" to="$(arg octvox_cloud_topic)" />
+    <remap from="~output/backprojected_cloud" to="$(arg backprojected_cloud_topic)" />
+  </node>
+</launch>

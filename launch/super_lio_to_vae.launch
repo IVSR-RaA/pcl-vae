@@ -6,6 +6,11 @@
     default="$(find pcl_vae)/pcl_vae/inference/config/$(arg robot_type)/vae_validation_config.yaml" />
   <arg name="publish_occ_map" default="false" />
   <arg name="publish_norm_image" default="false" />
+  <arg name="publish_octvox" default="false" />
+  <arg name="octvox_clear_before_insert" default="true" />
+  <arg name="octvox_target_frame" default="" />
+  <arg name="octvox_capacity" default="1000000" />
+  <arg name="publish_backprojected_cloud" default="true" />
   <arg name="queue_size" default="1" />
 
   <node
@@ -28,4 +33,20 @@
     <arg name="publish_norm_image" value="$(arg publish_norm_image)" />
     <arg name="queue_size" value="$(arg queue_size)" />
   </include>
+
+  <node
+    if="$(arg publish_octvox)"
+    name="range_image_to_octvox"
+    pkg="pcl_vae"
+    type="range_image_to_octvox_node"
+    output="screen"
+    respawn="false">
+    <rosparam command="load" file="$(arg config_path)" />
+    <param name="queue_size" value="$(arg queue_size)" />
+    <param name="clear_before_insert" value="$(arg octvox_clear_before_insert)" />
+    <param name="target_frame" value="$(arg octvox_target_frame)" />
+    <param name="octvox_capacity" value="$(arg octvox_capacity)" />
+    <param name="publish_backprojected_cloud" value="$(arg publish_backprojected_cloud)" />
+    <remap from="~input/range_image" to="/vae_decoder/output/range_image" />
+  </node>
 </launch>

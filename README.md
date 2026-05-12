@@ -88,7 +88,7 @@ The ROS nodes use the following topics:
 
 The launch file remaps the decoder latent input to the encoder latent output automatically.
 
-#### ROS Launch
+## ROS Launch
 Run the encoder/decoder pipeline when you already have a range image source:
 
 ```bash
@@ -126,7 +126,7 @@ source /home/nlg/pcl-vae/env/bin/activate
 source ~/all_ws/devel/setup.bash
 roslaunch pcl_vae point_to_rangeimage.launch \
   robot_type:=ground \
-  point_cloud_topic:=/points_raw
+  point_cloud_topic:=/mid/points
 ```
 
 Full `PointCloud2 -> range image -> latent -> decoded range image` pipeline:
@@ -136,7 +136,7 @@ source /home/nlg/pcl-vae/env/bin/activate
 source ~/all_ws/devel/setup.bash
 roslaunch pcl_vae super_lio_to_vae.launch \
   robot_type:=ground \
-  point_cloud_topic:=/points_raw
+  point_cloud_topic:=/mid/points
 ```
 
 Useful arguments for the bridge launches:
