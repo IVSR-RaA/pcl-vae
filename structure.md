@@ -55,3 +55,40 @@ If you want, I can add a small ROS-ready interface for this repo:
 - `encode_range_image_to_latent()`
 - `decode_latent_to_range_image()`
 - optional ROS1 or ROS2 publisher/subscriber example.
+# RANGE IMAGE TO OCTVOX (integrate pcl vae with )
+`backprojected_cloud` is the direct point cloud reconstructed from the range image.
+
+Pipeline:
+
+```text
+decoded range image
+-> backprojected_cloud
+-> OctVox insert
+-> octvox_cloud
+```
+
+Difference:
+
+`/range_image_to_octvox/output/backprojected_cloud`
+
+- Raw geometric back-projection of every valid range-image pixel.
+- One valid pixel becomes one 3D point.
+- No OctVox filtering, merging, voxel grouping, or capacity behavior.
+- Good for checking whether range image -> point cloud math is correct.
+
+`/range_image_to_octvox/output/octvox_cloud`
+
+- Point-cloud visualization of what is stored inside `OctVoxMap` after insertion.
+- Points are grouped by OctVox voxels/subvoxels.
+- Nearby points in the same subvoxel can be averaged/merged by `OctVox::AddPoint()`.
+- If `clear_before_insert:=false`, it can show accumulated OctVox map content over time.
+- Good for checking what the final OctVox map actually contains.
+
+So:
+
+```text
+backprojected_cloud = before OctVox
+octvox_cloud        = after OctVox
+```
+
+If you only care about the final map, use `octvox_cloud`. If the OctVox result looks wrong, compare it with `backprojected_cloud` to debug whether the problem is in range-image back-projection or in OctVox insertion/accumulation.
