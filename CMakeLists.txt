@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   basic
   cv_bridge
   geometry_msgs
+  message_generation
   pcl_conversions
   pcl_ros
   roscpp
@@ -24,8 +25,18 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
+add_message_files(
+  FILES
+  LatentVectorStamped.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 catkin_package(
-  CATKIN_DEPENDS basic cv_bridge geometry_msgs pcl_conversions pcl_ros roscpp rospy sensor_msgs std_msgs super_lio tf2 tf2_ros
+  CATKIN_DEPENDS basic cv_bridge geometry_msgs message_runtime pcl_conversions pcl_ros roscpp rospy sensor_msgs std_msgs super_lio tf2 tf2_ros
 )
 
 include_directories(
@@ -38,6 +49,7 @@ add_executable(range_image_to_octvox_node
   src/range_image_to_octvox_node.cpp
 )
 add_dependencies(range_image_to_octvox_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
 target_compile_definitions(range_image_to_octvox_node PRIVATE

@@ -11,6 +11,7 @@ import yaml
 
 import rospy
 from cv_bridge import CvBridge
+from pcl_vae.msg import LatentVectorStamped
 from sensor_msgs.msg import Image
 from std_msgs.msg import (
     Float32MultiArray,
@@ -101,12 +102,42 @@ class VAEDecoderNode:
             self._latent_callback,
             queue_size=queue_size,
         )
+        rospy.Subscriber(
+            "~input/latent_vector_stamped",
+            LatentVectorStamped,
+            self._latent_stamped_callback,
+            queue_size=queue_size,
+        )
 
         rospy.loginfo("[vae_decoder_node] Ready - waiting for latent vectors.")
         rospy.spin()
 
     def _latent_callback(self, msg: Float32MultiArray) -> None:
         """Decode a latent vector and publish the reconstructed range image."""
+        self._decode_and_publish(
+            msg,
+            stamp=rospy.Time.now(),
+            frame_id=rospy.get_param("~default_frame_id", "sensor_frame"),
+        )
+
+    def _latent_stamped_callback(self, msg: LatentVectorStamped) -> None:
+        """Decode a stamped latent vector and preserve its image header."""
+        stamp = msg.header.stamp
+        if stamp.is_zero():
+            stamp = rospy.Time.now()
+        frame_id = msg.header.frame_id or rospy.get_param(
+            "~default_frame_id",
+            "sensor_frame",
+        )
+        self._decode_and_publish(msg.latent_vector, stamp=stamp, frame_id=frame_id)
+
+    def _decode_and_publish(
+        self,
+        msg: Float32MultiArray,
+        stamp: rospy.Time,
+        frame_id: str,
+    ) -> None:
+        """Decode a latent vector and publish range-image outputs."""
         try:
             latent = np.array(msg.data, dtype=np.float32)
             expected_dim = msg.layout.data_offset
@@ -119,15 +150,14 @@ class VAEDecoderNode:
             recon_norm = self._iface.decode_latent_to_range_image(latent)
             recon_metric = (recon_norm * self._max_depth).astype(np.float32)
 
-            stamp = rospy.Time.now()
             self._pub_range.publish(
-                self._to_image_msg(recon_metric, stamp, frame_id="sensor_frame")
+                self._to_image_msg(recon_metric, stamp, frame_id=frame_id)
             )
 
             if self._publish_norm and self._pub_norm is not None:
                 self._pub_norm.publish(
                     self._to_image_msg(
-                        recon_norm.astype(np.float32), stamp, frame_id="sensor_frame"
+                        recon_norm.astype(np.float32), stamp, frame_id=frame_id
                     )
                 )
 

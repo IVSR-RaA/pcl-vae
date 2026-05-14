@@ -50,3 +50,11 @@
     <remap from="~input/range_image" to="/vae_decoder/output/range_image" />
   </node>
 </launch>
+
+<!-- For one OctVox per decoded range image, keep the default:
+
+octvox_clear_before_insert:=true
+For accumulated OctVox mapping, use:
+
+octvox_clear_before_insert:=false octvox_target_frame:=world
+That accumulation is only valid if TF can transform the decoded range image frame into world -->

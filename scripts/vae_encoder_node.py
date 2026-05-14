@@ -12,6 +12,7 @@ import yaml
 
 import rospy
 from cv_bridge import CvBridge
+from pcl_vae.msg import LatentVectorStamped
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray, MultiArrayDimension, MultiArrayLayout
 
@@ -66,6 +67,11 @@ class VAEEncoderNode:
             Float32MultiArray,
             queue_size=queue_size,
         )
+        self._pub_stamped = rospy.Publisher(
+            "~output/latent_vector_stamped",
+            LatentVectorStamped,
+            queue_size=queue_size,
+        )
 
         rospy.Subscriber(
             "~input/range_image",
@@ -88,7 +94,14 @@ class VAEEncoderNode:
             )
 
             latent = self._iface.encode_range_image_to_latent(raw_tensor)
-            self._pub.publish(self._build_latent_msg(latent))
+            latent_msg = self._build_latent_msg(latent)
+            self._pub.publish(latent_msg)
+            self._pub_stamped.publish(
+                LatentVectorStamped(
+                    header=msg.header,
+                    latent_vector=latent_msg,
+                )
+            )
         except Exception as exc:  # noqa: BLE001
             rospy.logerr(f"[vae_encoder_node] Failed to encode image: {exc}")
 

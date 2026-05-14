@@ -82,11 +82,15 @@ The ROS nodes use the following topics:
 - `/point_to_range_image/output/range_image` : `sensor_msgs/Image` with `32FC1` encoding
 - `/vae_encoder/input/range_image` : `sensor_msgs/Image` with `32FC1` encoding
 - `/vae_encoder/output/latent_vector` : `std_msgs/Float32MultiArray`
+- `/vae_encoder/output/latent_vector_stamped` : `pcl_vae/LatentVectorStamped`
+- `/vae_decoder/input/latent_vector_stamped` : optional stamped decoder input
 - `/vae_decoder/output/range_image` : `sensor_msgs/Image` with `32FC1` encoding
 - `/vae_decoder/output/range_image_norm` : optional normalized reconstruction
 - `/vae_decoder/output/occupancy_map` : optional `std_msgs/Int32MultiArray`
 
-The launch file remaps the decoder latent input to the encoder latent output automatically.
+The decoder preserves the stamped latent input header in its reconstructed range
+image. The launch file remaps the legacy decoder latent input to the encoder
+latent output automatically.
 
 ## ROS Launch
 Run the encoder/decoder pipeline when you already have a range image source:

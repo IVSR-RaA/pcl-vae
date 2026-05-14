@@ -32,7 +32,7 @@
     <param name="publish_normalised_image" value="$(arg publish_norm_image)" />
     <param name="queue_size" value="$(arg queue_size)" />
     <remap
-      from="~input/latent_vector"
-      to="/vae_encoder/output/latent_vector" />
+      from="~input/latent_vector_stamped"
+      to="/vae_encoder/output/latent_vector_stamped" />
   </node>
 </launch>
