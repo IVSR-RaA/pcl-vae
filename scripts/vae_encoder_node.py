@@ -114,7 +114,7 @@ class VAEEncoderNode:
         )
         layout = MultiArrayLayout(
             dim=[dim],
-            data_offset=len(latent),
+            data_offset=0,
         )
         return Float32MultiArray(
             layout=layout,

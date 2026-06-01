@@ -139,13 +139,39 @@ class VAEDecoderNode:
     ) -> None:
         """Decode a latent vector and publish range-image outputs."""
         try:
-            latent = np.array(msg.data, dtype=np.float32)
-            expected_dim = msg.layout.data_offset
+            data_offset = int(msg.layout.data_offset or 0)
+            if data_offset > 0 and data_offset < len(msg.data):
+                rospy.logwarn_throttle(
+                    5.0,
+                    "[vae_decoder_node] Applying non-zero MultiArray data_offset=%d.",
+                    data_offset,
+                )
+                latent_data = msg.data[data_offset:]
+            elif data_offset >= len(msg.data) and len(msg.data) > 0:
+                rospy.logwarn_throttle(
+                    5.0,
+                    "[vae_decoder_node] Ignoring legacy data_offset=%d because it "
+                    "does not describe padding inside data[].",
+                    data_offset,
+                )
+                latent_data = msg.data
+            else:
+                latent_data = msg.data
+
+            latent = np.array(latent_data, dtype=np.float32)
+            expected_dim = (
+                int(msg.layout.dim[0].size)
+                if msg.layout.dim and msg.layout.dim[0].size
+                else len(latent)
+            )
             if expected_dim and int(expected_dim) != self._latent_dim:
                 rospy.logwarn(
                     f"[vae_decoder_node] Received latent_dim={int(expected_dim)} "
                     f"but model expects {self._latent_dim}. Proceeding anyway."
                 )
+            if latent.size == 0:
+                rospy.logwarn("[vae_decoder_node] Skipping empty latent vector.")
+                return
 
             recon_norm = self._iface.decode_latent_to_range_image(latent)
             recon_metric = (recon_norm * self._max_depth).astype(np.float32)

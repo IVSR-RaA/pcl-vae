@@ -1,0 +1,533 @@
+<?xml version="1.0"?>
+<!--
+  ANYmal-C + 6-DOF Arm URDF
+  ─────────────────────────
+  - 4 chân ANYmal-C: mỗi chân 3 DOF (HAA, HFE, KFE) = 12 DOF
+  - 1 arm 6-DOF gắn trên lưng (base → link1..6 → ee)
+  - Tất cả geometry dùng primitive (box/cylinder/sphere)
+    → không cần mesh file, chạy được ngay trong Isaac Gym
+
+  Đặt file tại:
+    legged_gym/resources/robots/anymal_c_arm/urdf/anymal_c_arm.urdf
+
+  Tổng DOF: 18 (12 legs + 6 arm)
+  Joint order:
+    0-2  : LF_HAA, LF_HFE, LF_KFE
+    3-5  : RF_HAA, RF_HFE, RF_KFE
+    6-8  : LH_HAA, LH_HFE, LH_KFE
+    9-11 : RH_HAA, RH_HFE, RH_KFE
+    12   : arm_joint1 (shoulder yaw)
+    13   : arm_joint2 (shoulder pitch)
+    14   : arm_joint3 (elbow)
+    15   : arm_joint4 (wrist pitch)
+    16   : arm_joint5 (wrist roll)
+    17   : arm_joint6 (wrist yaw / end-effector)
+-->
+<robot name="anymal_c_arm">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BASE
+  ═══════════════════════════════════════════════════════════════ -->
+  <link name="base">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.50 0.20 0.10"/></geometry>
+      <material name="dark_gray"><color rgba="0.3 0.3 0.3 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.50 0.20 0.10"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="20.0"/>
+      <inertia ixx="0.2507" ixy="0" ixz="0"
+               iyy="0.5557" iyz="0" izz="0.7082"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MACRO: LEG  (dùng cho cả 4 chân, prefix = LF/RF/LH/RH)
+       Mỗi chân: HAA (abduction) → HFE (hip flexion) → KFE (knee)
+       Chiều dài thigh: 0.25m, shank: 0.25m
+  ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- ────── LF (Left Front) ────── -->
+  <link name="LF_HIP">
+    <visual><origin xyz="0 0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+    </collision>
+    <inertial><mass value="1.0"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="LF_HAA" type="revolute">
+    <parent link="base"/><child link="LF_HIP"/>
+    <origin xyz="0.22 0.12 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.7" upper="0.7" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LF_THIGH">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="1.5"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="LF_HFE" type="revolute">
+    <parent link="LF_HIP"/><child link="LF_THIGH"/>
+    <origin xyz="0 0.08 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.5" upper="1.5" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LF_SHANK">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+      <material name="light_gray"><color rgba="0.7 0.7 0.7 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="LF_KFE" type="revolute">
+    <parent link="LF_THIGH"/><child link="LF_SHANK"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.7" upper="-0.1" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LF_FOOT">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+      <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+    </collision>
+    <inertial><mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <joint name="LF_FOOT_FIXED" type="fixed">
+    <parent link="LF_SHANK"/><child link="LF_FOOT"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ────── RF (Right Front) ────── -->
+  <link name="RF_HIP">
+    <visual><origin xyz="0 -0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 -0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+    </collision>
+    <inertial><mass value="1.0"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="RF_HAA" type="revolute">
+    <parent link="base"/><child link="RF_HIP"/>
+    <origin xyz="0.22 -0.12 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.7" upper="0.7" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RF_THIGH">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="1.5"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="RF_HFE" type="revolute">
+    <parent link="RF_HIP"/><child link="RF_THIGH"/>
+    <origin xyz="0 -0.08 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.5" upper="1.5" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RF_SHANK">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+      <material name="light_gray"><color rgba="0.7 0.7 0.7 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="RF_KFE" type="revolute">
+    <parent link="RF_THIGH"/><child link="RF_SHANK"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.7" upper="-0.1" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RF_FOOT">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+      <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+    </collision>
+    <inertial><mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <joint name="RF_FOOT_FIXED" type="fixed">
+    <parent link="RF_SHANK"/><child link="RF_FOOT"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ────── LH (Left Hind) ────── -->
+  <link name="LH_HIP">
+    <visual><origin xyz="0 0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+    </collision>
+    <inertial><mass value="1.0"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="LH_HAA" type="revolute">
+    <parent link="base"/><child link="LH_HIP"/>
+    <origin xyz="-0.22 0.12 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.7" upper="0.7" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LH_THIGH">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="1.5"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="LH_HFE" type="revolute">
+    <parent link="LH_HIP"/><child link="LH_THIGH"/>
+    <origin xyz="0 0.08 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.5" upper="1.5" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LH_SHANK">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+      <material name="light_gray"><color rgba="0.7 0.7 0.7 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="LH_KFE" type="revolute">
+    <parent link="LH_THIGH"/><child link="LH_SHANK"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.7" upper="-0.1" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="LH_FOOT">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+      <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+    </collision>
+    <inertial><mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <joint name="LH_FOOT_FIXED" type="fixed">
+    <parent link="LH_SHANK"/><child link="LH_FOOT"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ────── RH (Right Hind) ────── -->
+  <link name="RH_HIP">
+    <visual><origin xyz="0 -0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 -0.04 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.08"/></geometry>
+    </collision>
+    <inertial><mass value="1.0"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="RH_HAA" type="revolute">
+    <parent link="base"/><child link="RH_HIP"/>
+    <origin xyz="-0.22 -0.12 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.7" upper="0.7" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RH_THIGH">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="1.5"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="RH_HFE" type="revolute">
+    <parent link="RH_HIP"/><child link="RH_THIGH"/>
+    <origin xyz="0 -0.08 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.5" upper="1.5" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RH_SHANK">
+    <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+      <material name="light_gray"><color rgba="0.7 0.7 0.7 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="RH_KFE" type="revolute">
+    <parent link="RH_THIGH"/><child link="RH_SHANK"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.7" upper="-0.1" effort="40" velocity="10"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="RH_FOOT">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+      <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.025"/></geometry>
+    </collision>
+    <inertial><mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <joint name="RH_FOOT_FIXED" type="fixed">
+    <parent link="RH_SHANK"/><child link="RH_FOOT"/>
+    <origin xyz="0 0 -0.25" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       ARM — 6-DOF gắn trên lưng (giữa base, lệch về phía trước)
+       Link length: 0.25m mỗi segment
+       Joint 1: shoulder yaw  (trục Z)
+       Joint 2: shoulder pitch (trục Y)
+       Joint 3: elbow pitch    (trục Y)
+       Joint 4: wrist pitch    (trục Y)
+       Joint 5: wrist roll     (trục X)
+       Joint 6: wrist yaw / EE (trục Z)
+  ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Arm mount (fixed adapter trên lưng) -->
+  <link name="arm_mount">
+    <visual><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.08"/></geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.08"/></geometry>
+    </collision>
+    <inertial><mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="arm_mount_joint" type="fixed">
+    <parent link="base"/><child link="arm_mount"/>
+    <!-- Gắn giữa lưng, lệch 0.1m về phía trước -->
+    <origin xyz="0.10 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Link 1: shoulder yaw -->
+  <link name="arm_link1">
+    <visual><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.03" length="0.08"/></geometry>
+      <material name="blue"><color rgba="0.2 0.4 0.8 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.03" length="0.08"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint1" type="revolute">
+    <parent link="arm_mount"/><child link="arm_link1"/>
+    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="50" velocity="3.0"/>
+    <dynamics damping="1.0" friction="0.2"/>
+  </joint>
+
+  <!-- Link 2: shoulder pitch -->
+  <link name="arm_link2">
+    <visual><origin xyz="0 0 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+      <material name="blue"><color rgba="0.2 0.4 0.8 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="1.0"/>
+      <inertia ixx="0.006" ixy="0" ixz="0" iyy="0.006" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint2" type="revolute">
+    <parent link="arm_link1"/><child link="arm_link2"/>
+    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="3.0"/>
+    <dynamics damping="1.0" friction="0.2"/>
+  </joint>
+
+  <!-- Link 3: elbow -->
+  <link name="arm_link3">
+    <visual><origin xyz="0 0 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.035 0.035 0.25"/></geometry>
+      <material name="blue_light"><color rgba="0.4 0.6 0.9 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.035 0.035 0.25"/></geometry>
+    </collision>
+    <inertial><mass value="0.8"/>
+      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint3" type="revolute">
+    <parent link="arm_link2"/><child link="arm_link3"/>
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.5" upper="0.2" effort="40" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.2"/>
+  </joint>
+
+  <!-- Link 4: wrist pitch -->
+  <link name="arm_link4">
+    <visual><origin xyz="0 0 0.10" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.20"/></geometry>
+      <material name="blue_light"><color rgba="0.4 0.6 0.9 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.10" rpy="0 0 0"/>
+      <geometry><box size="0.03 0.03 0.20"/></geometry>
+    </collision>
+    <inertial><mass value="0.4"/>
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint4" type="revolute">
+    <parent link="arm_link3"/><child link="arm_link4"/>
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="20" velocity="3.0"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <!-- Link 5: wrist roll -->
+  <link name="arm_link5">
+    <visual><origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.025" length="0.10"/></geometry>
+      <material name="blue_light"><color rgba="0.4 0.6 0.9 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.025" length="0.10"/></geometry>
+    </collision>
+    <inertial><mass value="0.2"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.0003"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint5" type="revolute">
+    <parent link="arm_link4"/><child link="arm_link5"/>
+    <origin xyz="0 0 0.20" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="3.0"/>
+    <dynamics damping="0.3" friction="0.1"/>
+  </joint>
+
+  <!-- Link 6 / End-Effector -->
+  <link name="arm_link6">
+    <visual><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.08"/></geometry>
+      <material name="orange"><color rgba="0.9 0.5 0.1 1"/></material>
+    </visual>
+    <collision><origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.08"/></geometry>
+    </collision>
+    <inertial><mass value="0.15"/>
+      <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0002"/>
+    </inertial>
+  </link>
+  <joint name="arm_joint6" type="revolute">
+    <parent link="arm_link5"/><child link="arm_link6"/>
+    <origin xyz="0 0 0.10" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="3.0"/>
+    <dynamics damping="0.3" friction="0.1"/>
+  </joint>
+
+  <!-- EE tip (fixed, dùng để track vị trí đầu gripper) -->
+  <link name="ee_tip">
+    <inertial><mass value="0.01"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+  <joint name="ee_tip_joint" type="fixed">
+    <parent link="arm_link6"/><child link="ee_tip"/>
+    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+  </joint>
+
+</robot>

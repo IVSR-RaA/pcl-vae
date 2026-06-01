@@ -168,10 +168,12 @@ class PointToRangeImageNode:
         cols = np.clip(cols, 0, self._image_width - 1)
         rows = np.clip(rows, 0, self._image_height - 1)
 
-        for row, col, depth in zip(rows, cols, radius):
-            current = range_image[row, col]
-            if current == self._invalid_pixel_value or depth < current:
-                range_image[row, col] = depth
+        flat_range_image = range_image.reshape(-1)
+        linear_indices = rows * self._image_width + cols
+        z_buffer = np.full(flat_range_image.shape, np.inf, dtype=np.float32)
+        np.minimum.at(z_buffer, linear_indices, radius.astype(np.float32))
+        valid_pixels = np.isfinite(z_buffer)
+        flat_range_image[valid_pixels] = z_buffer[valid_pixels]
 
         return range_image
 

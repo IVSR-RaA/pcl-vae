@@ -171,12 +171,14 @@ def convert_point_cloud_to_occupancy_map(point_cloud, voxel_size, max_range):
         torch.Tensor: The 3D occupancy map as a torch tensor.
     """
 
-    # Grid size
-    grid_size = wp.vec3i(
-        int(max_range)*int(max_range) + 1,
-        int(max_range)*int(max_range) + 1,
-        int(max_range)*int(max_range) + 1
-    )
+    if voxel_size <= 0:
+        raise ValueError(f"voxel_size must be positive, got {voxel_size}")
+    if max_range <= 0:
+        raise ValueError(f"max_range must be positive, got {max_range}")
+
+    # Cover [-max_range, max_range] in each axis at the requested resolution.
+    grid_dim = int(np.ceil((2.0 * float(max_range)) / float(voxel_size))) + 1
+    grid_size = wp.vec3i(grid_dim, grid_dim, grid_dim)
 
     # Grid center
     grid_center = wp.vec3f(
